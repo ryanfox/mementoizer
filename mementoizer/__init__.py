@@ -87,7 +87,17 @@ def mementoize(filename, skip_start=0, skip_end=0, min_scene_length=120, thresho
 
         first_half = clips[:len(clips) // 2]
         second_half = clips[len(clips) // 2:]
-        final_clip_order = [clip for pair in itertools.zip_longest(reversed(second_half), first_half) for clip in pair if clip is not None]
+        final_clip_order = []
+        while len(first_half) > 0 or len(second_half) > 0:
+            try:
+                final_clip_order.append(second_half.pop())
+            except IndexError:
+                pass
+
+            try:
+                final_clip_order.append(first_half.pop(0))
+            except IndexError:
+                pass
 
         # bw filter the early clips
         for i in range(len(final_clip_order) - 2):
@@ -104,10 +114,8 @@ def mementoize(filename, skip_start=0, skip_end=0, min_scene_length=120, thresho
             final_clip_order[-1] = faded_clip
 
         else:  # bw -> color transition happens between last two clips
-            faded_clip = CompositeVideoClip([
-                blackwhite(original_clip.subclip(cuts[-2], cuts[-1] + overlap)).crossfadeout(overlap),
-                original_clip.subclip(cuts[-1]).crossfadein(overlap)
-            ])
+            fade_out = blackwhite(final_clip_order[-2]).crossfadeout(overlap)
+            faded_clip = CompositeVideoClip([fade_out, final_clip_order[-1].set_start(fade_out.end - overlap).crossfadein(overlap)])
             final_clip_order[-2] = faded_clip
             del final_clip_order[-1]
 
@@ -133,7 +141,7 @@ def cli():
     args = parser.parse_args()
 
     if args.cuts:
-        args.cuts = [int(timestamp.strip()) for timestamp in args.cuts.split(',')]
+        args.cuts = [float(timestamp.strip()) for timestamp in args.cuts.split(',')]
 
     mementoize(filename=args.filename,
                skip_start=args.skip_start,
