@@ -5,7 +5,7 @@ A python library to [Memento-ize](https://en.wikipedia.org/wiki/Memento_(film)) 
 Meaning, cut the video up into scenes, pass the first half through a black-and-white filter, and interleave them.
 
 Created for NaMoGenMo 2022. For an example, see:
-https://www.youtube.com/watch?v=a9vislyWTps
+https://www.youtube.com/watch?v=vkgGLhG3ccI
 
 
 The original film for comparison can be viewed here:
