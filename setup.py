@@ -7,7 +7,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='mementoizer',
-    version='0.0.1',
+    version='0.0.2',
     description='Memento-ize a video',
     long_description=long_description,
     long_description_content_type='text/markdown',
