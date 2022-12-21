@@ -5,7 +5,7 @@ import re
 import subprocess
 
 import imageio_ffmpeg
-from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ColorClip, concatenate_videoclips
 from moviepy.video.fx.blackwhite import blackwhite
 from moviepy.video.fx.fadein import fadein
 
@@ -87,38 +87,40 @@ def mementoize(filename, skip_start=0, skip_end=0, min_scene_length=120, thresho
 
         first_half = clips[:len(clips) // 2]
         second_half = clips[len(clips) // 2:]
-        final_clip_order = []
+        clip_order = []
         while len(first_half) > 0 or len(second_half) > 0:
             try:
-                final_clip_order.append(second_half.pop())
+                clip_order.append(second_half.pop())
             except IndexError:
                 pass
 
             try:
-                final_clip_order.append(first_half.pop(0))
+                clip_order.append(first_half.pop(0))
             except IndexError:
                 pass
 
         # bw filter the early clips
-        for i in range(len(final_clip_order) - 2):
+        for i in range(len(clip_order) - 2):
             if i % 2 == 1:
-                final_clip_order[i] = blackwhite(final_clip_order[i])
+                clip_order[i] = blackwhite(clip_order[i])
 
         # handle the transition
-        if len(final_clip_order) % 2 == 0:  # bw -> color transition happens halfway through last clip
-            last_clip = final_clip_order[-1]
+        if len(clip_order) % 2 == 0:  # bw -> color transition happens halfway through last clip
+            last_clip = clip_order[-1]
             faded_clip = CompositeVideoClip([
                 blackwhite(last_clip.subclip(0, last_clip.duration / 2 + overlap)).crossfadeout(overlap),
                 last_clip.subclip(last_clip.duration / 2).set_start(last_clip.duration / 2).crossfadein(overlap)
             ])
-            final_clip_order[-1] = faded_clip
+            clip_order[-1] = faded_clip
 
         else:  # bw -> color transition happens between last two clips
-            fade_out = blackwhite(final_clip_order[-2]).crossfadeout(overlap)
-            faded_clip = CompositeVideoClip([fade_out, final_clip_order[-1].set_start(fade_out.end - overlap).crossfadein(overlap)])
-            final_clip_order[-2] = faded_clip
-            del final_clip_order[-1]
+            fade_out = blackwhite(clip_order[-2]).crossfadeout(overlap)
+            faded_clip = CompositeVideoClip([fade_out, clip_order[-1].set_start(fade_out.end - overlap).crossfadein(overlap)])
+            clip_order[-2] = faded_clip
+            del clip_order[-1]
 
+        spacer = ColorClip(clip_order[0].size, (0, 0, 0), duration=0.5)
+        final_clip_order = [item for pair in zip(clip_order, itertools.repeat(spacer)) for item in pair]
         final_clip = concatenate_videoclips(final_clip_order)
 
         filename_parts = os.path.splitext(filename)
